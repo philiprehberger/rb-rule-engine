@@ -15,7 +15,7 @@ module Philiprehberger
       # @param mode [Symbol] :all to run all matching rules, :first to stop after first match
       # @yield [engine] block for defining rules using the DSL
       def initialize(mode: :all, &block)
-        raise Error, "mode must be :all or :first" unless %i[all first].include?(mode)
+        raise Error, 'mode must be :all or :first' unless %i[all first].include?(mode)
 
         @rules = []
         @mode = mode
