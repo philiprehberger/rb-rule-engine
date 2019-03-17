@@ -2,7 +2,11 @@
 
 [![Tests](https://github.com/philiprehberger/rb-rule-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/rb-rule-engine/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/philiprehberger-rule_engine.svg)](https://rubygems.org/gems/philiprehberger-rule_engine)
+[![GitHub release](https://img.shields.io/github/v/release/philiprehberger/rb-rule-engine)](https://github.com/philiprehberger/rb-rule-engine/releases)
+[![Last updated](https://img.shields.io/github/last-commit/philiprehberger/rb-rule-engine)](https://github.com/philiprehberger/rb-rule-engine/commits/main)
 [![License](https://img.shields.io/github/license/philiprehberger/rb-rule-engine)](LICENSE)
+[![Bug Reports](https://img.shields.io/github/issues/philiprehberger/rb-rule-engine/bug)](https://github.com/philiprehberger/rb-rule-engine/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+[![Feature Requests](https://img.shields.io/github/issues/philiprehberger/rb-rule-engine/enhancement)](https://github.com/philiprehberger/rb-rule-engine/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
 [![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ec6cb9)](https://github.com/sponsors/philiprehberger)
 
 Lightweight rule engine with declarative conditions and actions
@@ -16,7 +20,7 @@ Lightweight rule engine with declarative conditions and actions
 Add to your Gemfile:
 
 ```ruby
-gem "philiprehberger-rule_engine"
+gem 'philiprehberger-rule_engine'
 ```
 
 Or install directly:
@@ -28,7 +32,7 @@ gem install philiprehberger-rule_engine
 ## Usage
 
 ```ruby
-require "philiprehberger/rule_engine"
+require 'philiprehberger/rule_engine'
 
 engine = Philiprehberger::RuleEngine.new do
   rule 'discount' do
@@ -85,6 +89,100 @@ results = engine.evaluate({ tier: 'premium' })
 # => [{ rule: 'premium', result: { discount: 0.20 } }]
 ```
 
+### Composite Conditions
+
+```ruby
+engine = Philiprehberger::RuleEngine.new do
+  rule 'access' do
+    condition { |f| all?(f[:active], any?(f[:admin], f[:moderator])) }
+    action { |_| 'granted' }
+  end
+
+  rule 'blocked' do
+    condition { |f| none?(f[:verified], f[:trusted]) }
+    action { |_| 'denied' }
+  end
+end
+```
+
+### Dynamic Rule Management
+
+```ruby
+engine = Philiprehberger::RuleEngine.new
+
+engine.add_rule('dynamic') do
+  condition { |f| f[:ready] }
+  action { |_| 'go' }
+end
+
+engine.disable_rule('dynamic')
+engine.evaluate({ ready: true })  # => []
+
+engine.enable_rule('dynamic')
+engine.evaluate({ ready: true })  # => [{ rule: 'dynamic', result: 'go' }]
+
+engine.remove_rule('dynamic')
+```
+
+### Rule Chaining
+
+```ruby
+engine = Philiprehberger::RuleEngine.new do
+  rule 'fetch' do
+    action { |_| 10 }
+  end
+
+  rule 'double' do
+    action { |f| f[:input] * 2 }
+  end
+
+  rule 'format' do
+    action { |f| "Result: #{f[:input]}" }
+  end
+end
+
+engine.chain('fetch', 'double', 'format')
+# => 'Result: 20'
+```
+
+### Execution Statistics
+
+```ruby
+engine = Philiprehberger::RuleEngine.new do
+  rule 'tracked' do
+    condition { |_| true }
+    action { |_| 'ok' }
+  end
+end
+
+3.times { engine.evaluate({}) }
+
+engine.stats
+# => { 'tracked' => { evaluations: 3, matches: 3, executions: 3, avg_time: 0.00001, last_triggered: <Time> } }
+
+engine.reset_stats!
+```
+
+### Serialization
+
+```ruby
+engine = Philiprehberger::RuleEngine.new(mode: :first) do
+  rule 'alpha' do
+    priority 1
+    condition { |_| true }
+    action { |_| 'go' }
+  end
+end
+
+data = engine.to_h
+# => { mode: :first, rules: [{ name: 'alpha', priority: 1, enabled: true }] }
+
+restored = Philiprehberger::RuleEngine.from_h(data) do |r|
+  r.condition { |_| true }
+  r.action { |_| 'restored' }
+end
+```
+
 ## API
 
 ### `Engine`
@@ -92,10 +190,19 @@ results = engine.evaluate({ tier: 'premium' })
 | Method | Description |
 |--------|-------------|
 | `.new(mode:) { }` | Create engine with rule definitions |
+| `.from_h(data, &resolver)` | Reconstruct engine from serialized hash |
 | `#rule(name) { }` | Define a rule with condition and action |
 | `#evaluate(facts)` | Evaluate rules against facts |
 | `#rules` | Array of registered rules |
 | `#mode` | Current evaluation mode |
+| `#to_h` | Serialize engine configuration to hash |
+| `#add_rule(name) { }` | Add a rule after engine creation |
+| `#remove_rule(name)` | Remove a rule by name |
+| `#disable_rule(name)` | Disable a rule (skipped during evaluation) |
+| `#enable_rule(name)` | Re-enable a disabled rule |
+| `#chain(*rule_names)` | Execute rules sequentially as a pipeline |
+| `#stats` | Per-rule execution statistics |
+| `#reset_stats!` | Clear all execution statistics |
 
 ### Rule DSL
 
@@ -105,6 +212,14 @@ results = engine.evaluate({ tier: 'premium' })
 | `action { \|facts\| }` | Set the action to execute |
 | `priority(n)` | Set priority (lower runs first) |
 
+### Composite Condition Helpers
+
+| Method | Description |
+|--------|-------------|
+| `all?(*conditions)` | True if all conditions are truthy |
+| `any?(*conditions)` | True if any condition is truthy |
+| `none?(*conditions)` | True if no conditions are truthy |
+
 ## Development
 
 ```bash
@@ -113,6 +228,12 @@ bundle exec rspec
 bundle exec rubocop
 ```
 
+## Support
+
+- [Bug Reports](https://github.com/philiprehberger/rb-rule-engine/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+- [Feature Requests](https://github.com/philiprehberger/rb-rule-engine/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
+- [GitHub Sponsors](https://github.com/sponsors/philiprehberger)
+
 ## License
 
-MIT
+[MIT](LICENSE)

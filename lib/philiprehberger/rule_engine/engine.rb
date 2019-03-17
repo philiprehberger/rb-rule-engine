@@ -4,6 +4,8 @@ module Philiprehberger
   module RuleEngine
     # A lightweight rule engine with declarative conditions and actions.
     class Engine
+      include Helpers
+
       # @return [Array<Rule>] the registered rules
       attr_reader :rules
 
@@ -19,6 +21,7 @@ module Philiprehberger
 
         @rules = []
         @mode = mode
+        @stats = {}
         instance_eval(&block) if block
       end
 
@@ -31,7 +34,52 @@ module Philiprehberger
         r = Rule.new(name)
         r.instance_eval(&block) if block
         @rules << r
+        @stats[name] = new_stat_entry
         r
+      end
+
+      # Add a rule after engine creation.
+      #
+      # @param name [String] the rule name
+      # @yield [rule] block for configuring the rule
+      # @return [Rule] the created rule
+      def add_rule(name, &block)
+        rule(name, &block)
+      end
+
+      # Remove a rule by name.
+      #
+      # @param name [String] the rule name to remove
+      # @return [Rule, nil] the removed rule, or nil if not found
+      def remove_rule(name)
+        index = @rules.index { |r| r.name == name }
+        return nil unless index
+
+        removed = @rules.delete_at(index)
+        @stats.delete(name)
+        removed
+      end
+
+      # Disable a rule by name (skipped during evaluation).
+      #
+      # @param name [String] the rule name to disable
+      # @return [void]
+      def disable_rule(name)
+        found = @rules.find { |r| r.name == name }
+        raise Error, "rule not found: #{name}" unless found
+
+        found.enabled = false
+      end
+
+      # Enable a rule by name.
+      #
+      # @param name [String] the rule name to enable
+      # @return [void]
+      def enable_rule(name)
+        found = @rules.find { |r| r.name == name }
+        raise Error, "rule not found: #{name}" unless found
+
+        found.enabled = true
       end
 
       # Evaluate all rules against the given facts.
@@ -39,18 +87,97 @@ module Philiprehberger
       # @param facts [Object] the facts to evaluate
       # @return [Array<Hash>] results with :rule and :result for each matched rule
       def evaluate(facts)
-        sorted = @rules.sort_by(&:priority)
+        sorted = @rules.select(&:enabled).sort_by(&:priority)
         results = []
 
         sorted.each do |r|
+          stat = @stats[r.name] ||= new_stat_entry
+          stat[:evaluations] += 1
+
           next unless r.matches?(facts)
 
+          stat[:matches] += 1
+          start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           result = r.execute(facts)
+          elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+
+          stat[:executions] += 1
+          stat[:total_time] += elapsed
+          stat[:avg_time] = stat[:total_time] / stat[:executions]
+          stat[:last_triggered] = Time.now
+
           results << { rule: r.name, result: result }
           break if @mode == :first
         end
 
         results
+      end
+
+      # Return per-rule execution statistics.
+      #
+      # @return [Hash] stats keyed by rule name
+      def stats
+        @stats.transform_values do |s|
+          {
+            evaluations: s[:evaluations],
+            matches: s[:matches],
+            executions: s[:executions],
+            avg_time: s[:avg_time],
+            last_triggered: s[:last_triggered]
+          }
+        end
+      end
+
+      # Reset all execution statistics.
+      #
+      # @return [void]
+      def reset_stats!
+        @stats.each_key { |k| @stats[k] = new_stat_entry }
+      end
+
+      # Serialize the engine configuration to a hash.
+      #
+      # @return [Hash] engine metadata including mode and rules
+      def to_h
+        {
+          mode: @mode,
+          rules: @rules.map(&:to_h)
+        }
+      end
+
+      # Execute rules sequentially as a pipeline.
+      # Each rule's action result is passed as input: to the next rule.
+      #
+      # @param rule_names [Array<String>] ordered rule names to chain
+      # @return [Object] the final action's result
+      def chain(*rule_names)
+        chain_rules = rule_names.map do |name|
+          found = @rules.find { |r| r.name == name }
+          raise Error, "rule not found: #{name}" unless found
+
+          found
+        end
+
+        input = nil
+        chain_rules.each do |r|
+          facts = { input: input }
+          input = r.execute(facts)
+        end
+
+        input
+      end
+
+      private
+
+      def new_stat_entry
+        {
+          evaluations: 0,
+          matches: 0,
+          executions: 0,
+          total_time: 0.0,
+          avg_time: 0.0,
+          last_triggered: nil
+        }
       end
     end
   end
