@@ -43,8 +43,8 @@ module Philiprehberger
       # @param name [String] the rule name
       # @yield [rule] block for configuring the rule
       # @return [Rule] the created rule
-      def add_rule(name, &block)
-        rule(name, &block)
+      def add_rule(name, &)
+        rule(name, &)
       end
 
       # Remove a rule by name.

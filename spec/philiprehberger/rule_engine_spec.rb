@@ -989,7 +989,7 @@ RSpec.describe Philiprehberger::RuleEngine::Helpers do
 
     it 'evaluates procs' do
       expect(helper.all?(-> { true }, -> { 1 })).to be true
-      expect(helper.all?(-> { true }, -> { nil })).to be false
+      expect(helper.all?(-> { true }, -> {})).to be false
     end
 
     it 'returns true with no arguments' do
@@ -1008,7 +1008,7 @@ RSpec.describe Philiprehberger::RuleEngine::Helpers do
 
     it 'evaluates procs' do
       expect(helper.any?(-> { false }, -> { 42 })).to be true
-      expect(helper.any?(-> { false }, -> { nil })).to be false
+      expect(helper.any?(-> { false }, -> {})).to be false
     end
 
     it 'returns false with no arguments' do
@@ -1026,7 +1026,7 @@ RSpec.describe Philiprehberger::RuleEngine::Helpers do
     end
 
     it 'evaluates procs' do
-      expect(helper.none?(-> { false }, -> { nil })).to be true
+      expect(helper.none?(-> { false }, -> {})).to be true
       expect(helper.none?(-> { false }, -> { 1 })).to be false
     end
 
