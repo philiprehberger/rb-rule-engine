@@ -158,6 +158,29 @@ engine.stats
 engine.reset_stats!
 ```
 
+### Dry Run
+
+Evaluate without executing actions:
+
+```ruby
+matched = engine.dry_run(facts)
+# => [{ name: "discount", priority: 10 }]
+```
+
+### Conflict Detection
+
+```ruby
+engine.detect_conflicts
+# => [{ rules: ["rule_a", "rule_b"], priorities: [10, 5] }]
+```
+
+### Rule Validation
+
+```ruby
+engine.validate_rules
+# => { valid: false, issues: ["Rule 'x' has no action"] }
+```
+
 ### Serialization
 
 ```ruby
@@ -198,6 +221,9 @@ end
 | `#chain(*rule_names)` | Execute rules sequentially as a pipeline |
 | `#stats` | Per-rule execution statistics |
 | `#reset_stats!` | Clear all execution statistics |
+| `#dry_run(facts)` | Evaluate rules without executing actions |
+| `#detect_conflicts` | Find rule pairs that could both match |
+| `#validate_rules` | Check all rules have conditions and actions |
 
 ### Rule DSL
 

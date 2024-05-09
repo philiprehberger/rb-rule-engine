@@ -135,6 +135,40 @@ module Philiprehberger
         @stats.each_key { |k| @stats[k] = new_stat_entry }
       end
 
+      # Evaluate rules without executing actions, return matched rule info
+      #
+      # @param facts [Hash] the facts to evaluate
+      # @return [Array<Hash>] matched rules with name and priority
+      def dry_run(facts)
+        matched = enabled_rules_sorted.select { |rule| rule.matches?(facts) }
+        matched = [matched.first].compact if @mode == :first
+        matched.map { |rule| { name: rule.name, priority: rule.priority } }
+      end
+
+      # Find rules with potentially overlapping conditions
+      #
+      # @return [Array<Hash>] pairs of rule names that could both match
+      def detect_conflicts
+        pairs = []
+        sorted = enabled_rules_sorted
+        sorted.combination(2) do |a, b|
+          pairs << { rules: [a.name, b.name], priorities: [a.priority, b.priority] }
+        end
+        pairs
+      end
+
+      # Validate all rules have conditions and actions defined
+      #
+      # @return [Hash] { valid: Boolean, issues: Array<String> }
+      def validate_rules
+        issues = []
+        @rules.each do |rule|
+          issues << "Rule '#{rule.name}' has no condition" unless rule.instance_variable_get(:@condition)
+          issues << "Rule '#{rule.name}' has no action" unless rule.instance_variable_get(:@action)
+        end
+        { valid: issues.empty?, issues: issues }
+      end
+
       # Serialize the engine configuration to a hash.
       #
       # @return [Hash] engine metadata including mode and rules
@@ -168,6 +202,10 @@ module Philiprehberger
       end
 
       private
+
+      def enabled_rules_sorted
+        @rules.select(&:enabled).sort_by(&:priority)
+      end
 
       def new_stat_entry
         {
