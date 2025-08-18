@@ -100,6 +100,30 @@ engine = Philiprehberger::RuleEngine.new do
 end
 ```
 
+### Rule Tags
+
+Organize rules into categories and selectively evaluate subsets:
+
+```ruby
+engine = Philiprehberger::RuleEngine.new do
+  rule "validate_age", tags: [:validation] do
+    condition { |f| f[:age] >= 18 }
+    action { |_| "valid" }
+  end
+
+  rule "apply_discount", tags: [:pricing] do
+    condition { |f| f[:premium] }
+    action { |_| "discount applied" }
+  end
+end
+
+engine.evaluate(facts, tags: [:validation])   # only validation rules
+engine.dry_run(facts, tags: [:pricing])        # dry run only pricing
+engine.rules_by_tag(:validation)               # list rules with tag
+```
+
+Multiple tags use OR logic — a rule matches if it has any of the specified tags.
+
 ### Dynamic Rule Management
 
 ```ruby
@@ -210,7 +234,7 @@ end
 | `.new(mode:) { }` | Create engine with rule definitions |
 | `.from_h(data, &resolver)` | Reconstruct engine from serialized hash |
 | `#rule(name) { }` | Define a rule with condition and action |
-| `#evaluate(facts)` | Evaluate rules against facts |
+| `#evaluate(facts, tags: nil)` | Evaluate rules against facts; filter by tags if given |
 | `#rules` | Array of registered rules |
 | `#mode` | Current evaluation mode |
 | `#to_h` | Serialize engine configuration to hash |
@@ -221,7 +245,8 @@ end
 | `#chain(*rule_names)` | Execute rules sequentially as a pipeline |
 | `#stats` | Per-rule execution statistics |
 | `#reset_stats!` | Clear all execution statistics |
-| `#dry_run(facts)` | Evaluate rules without executing actions |
+| `#rules_by_tag(tag)` | Return rules with the given tag |
+| `#dry_run(facts, tags: nil)` | Evaluate rules without executing actions |
 | `#detect_conflicts` | Find rule pairs that could both match |
 | `#validate_rules` | Check all rules have conditions and actions |
 

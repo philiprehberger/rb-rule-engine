@@ -10,8 +10,9 @@ Gem::Specification.new do |spec|
 
   spec.summary = 'Lightweight rule engine with declarative conditions and actions'
   spec.description = 'A lightweight rule engine with a declarative DSL for defining conditions and actions. ' \
-                     'Supports priority-based ordering, first-match and all-match evaluation modes, ' \
-                     'and composable rule definitions.'
+                     'Supports priority-based ordering, rule tagging with selective evaluation, ' \
+                     'first-match and all-match modes, dry run, conflict detection, serialization, ' \
+                     'chaining, and per-rule execution statistics.'
   spec.homepage = 'https://philiprehberger.com/open-source-packages/ruby/philiprehberger-rule_engine'
   spec.license = 'MIT'
 

@@ -35,8 +35,9 @@ module Philiprehberger
         name = rule_data[:name] || rule_data['name']
         priority_val = rule_data[:priority] || rule_data['priority'] || 0
         enabled_val = rule_data.key?(:enabled) ? rule_data[:enabled] : rule_data.fetch('enabled', true)
+        tags_val = (rule_data[:tags] || rule_data['tags'] || []).map(&:to_sym)
 
-        r = engine.add_rule(name) do
+        r = engine.add_rule(name, tags: tags_val) do
           priority priority_val
         end
         r.enabled = enabled_val

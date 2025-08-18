@@ -440,8 +440,8 @@ RSpec.describe Philiprehberger::RuleEngine::Engine do
       data = engine.to_h
       expect(data[:mode]).to eq(:first)
       expect(data[:rules].size).to eq(2)
-      expect(data[:rules][0]).to eq({ name: 'alpha', priority: 5, enabled: true })
-      expect(data[:rules][1]).to eq({ name: 'beta', priority: 10, enabled: true })
+      expect(data[:rules][0]).to eq({ name: 'alpha', priority: 5, enabled: true, tags: [] })
+      expect(data[:rules][1]).to eq({ name: 'beta', priority: 10, enabled: true, tags: [] })
     end
 
     it 'includes disabled state in serialization' do
@@ -1054,7 +1054,7 @@ RSpec.describe Philiprehberger::RuleEngine::Rule do
     it 'serializes rule metadata' do
       rule = described_class.new('my_rule')
       rule.priority(7)
-      expect(rule.to_h).to eq({ name: 'my_rule', priority: 7, enabled: true })
+      expect(rule.to_h).to eq({ name: 'my_rule', priority: 7, enabled: true, tags: [] })
     end
 
     it 'includes disabled state' do
@@ -1139,6 +1139,97 @@ RSpec.describe Philiprehberger::RuleEngine::Helpers do
 
     it 'returns true with no arguments' do
       expect(helper.none?).to be true
+    end
+  end
+end
+
+RSpec.describe 'Rule tagging' do
+  let(:engine) do
+    Philiprehberger::RuleEngine.new do
+      rule 'validate', tags: [:validation] do
+        condition { |f| f[:age] && f[:age] >= 18 }
+        action { |_| 'valid' }
+      end
+      rule 'discount', tags: [:pricing] do
+        condition { |f| f[:premium] }
+        action { |_| 'discount applied' }
+      end
+      rule 'log_access', tags: %i[validation logging] do
+        condition { |_| true }
+        action { |_| 'logged' }
+      end
+    end
+  end
+
+  describe '#rules_by_tag' do
+    it 'returns rules matching the tag' do
+      names = engine.rules_by_tag(:validation).map(&:name)
+      expect(names).to contain_exactly('validate', 'log_access')
+    end
+
+    it 'returns empty array for unknown tag' do
+      expect(engine.rules_by_tag(:unknown)).to be_empty
+    end
+  end
+
+  describe '#evaluate with tags:' do
+    it 'only runs rules with matching tags' do
+      results = engine.evaluate({ age: 20, premium: true }, tags: [:pricing])
+      expect(results.length).to eq(1)
+      expect(results.first[:rule]).to eq('discount')
+    end
+
+    it 'runs all rules when tags is nil' do
+      results = engine.evaluate({ age: 20, premium: true })
+      expect(results.length).to eq(3)
+    end
+
+    it 'supports multiple tags (OR logic)' do
+      results = engine.evaluate({ age: 20, premium: true }, tags: %i[validation pricing])
+      expect(results.length).to eq(3)
+    end
+  end
+
+  describe '#dry_run with tags:' do
+    it 'filters by tag' do
+      matched = engine.dry_run({ age: 20 }, tags: [:validation])
+      names = matched.map { |m| m[:name] }
+      expect(names).to contain_exactly('validate', 'log_access')
+    end
+  end
+
+  describe 'Rule#tags' do
+    it 'stores tags as symbols' do
+      rule = engine.rules.find { |r| r.name == 'validate' }
+      expect(rule.tags).to eq([:validation])
+    end
+
+    it 'defaults to empty array' do
+      e = Philiprehberger::RuleEngine.new do
+        rule 'no_tags' do
+          condition { |_| true }
+          action { |_| 'ok' }
+        end
+      end
+      expect(e.rules.first.tags).to eq([])
+    end
+  end
+
+  describe 'serialization with tags' do
+    it 'includes tags in to_h' do
+      data = engine.to_h
+      validate_rule = data[:rules].find { |r| r[:name] == 'validate' }
+      expect(validate_rule[:tags]).to eq([:validation])
+    end
+
+    it 'restores tags from from_h' do
+      data = engine.to_h
+      restored = Philiprehberger::RuleEngine.from_h(data) do |r|
+        r.condition { |_| true }
+        r.action { |_| 'restored' }
+      end
+      rule = restored.rules.find { |r| r.name == 'validate' }
+      expect(rule.tags).to eq([:validation])
     end
   end
 end
