@@ -7,9 +7,6 @@ module Philiprehberger
       # @return [String] the rule name
       attr_reader :name
 
-      # @return [Integer] the rule priority (lower runs first)
-      attr_reader :priority
-
       # @param name [String] the rule name
       def initialize(name)
         @name = name
@@ -34,12 +31,16 @@ module Philiprehberger
         @action = block
       end
 
-      # Set the priority for this rule.
+      # Get or set the priority for this rule.
       #
-      # @param value [Integer] priority value (lower runs first)
-      # @return [void]
-      def priority(value)
-        @priority = value
+      # @param value [Integer, nil] priority value (lower runs first); omit to get current value
+      # @return [Integer] the current priority
+      def priority(value = nil)
+        if value.nil?
+          @priority
+        else
+          @priority = value
+        end
       end
 
       # Check if the condition matches the given facts.
