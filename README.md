@@ -3,6 +3,7 @@
 [![Tests](https://github.com/philiprehberger/rb-rule-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/rb-rule-engine/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/philiprehberger-rule_engine.svg)](https://rubygems.org/gems/philiprehberger-rule_engine)
 [![License](https://img.shields.io/github/license/philiprehberger/rb-rule-engine)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ec6cb9)](https://github.com/sponsors/philiprehberger)
 
 Lightweight rule engine with declarative conditions and actions
 
