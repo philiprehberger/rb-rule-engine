@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-28
+
+### Added
+- `engine.to_h` and `RuleEngine.from_h` for rule configuration serialization
+- Composite condition helpers: `all?`, `any?`, `none?` for readable logic
+- `engine.stats` for per-rule execution statistics with timing
+- Dynamic rule management: `add_rule`, `remove_rule`, `disable_rule`, `enable_rule`
+- `engine.chain(*rule_names)` for sequential rule pipelines
+
 ## [0.1.2] - 2026-03-24
 
 ### Fixed

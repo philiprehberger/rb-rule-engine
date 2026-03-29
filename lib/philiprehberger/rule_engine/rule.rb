@@ -4,8 +4,13 @@ module Philiprehberger
   module RuleEngine
     # A single rule with a name, condition, action, and priority.
     class Rule
+      include Helpers
+
       # @return [String] the rule name
       attr_reader :name
+
+      # @return [Boolean] whether the rule is enabled
+      attr_accessor :enabled
 
       # @param name [String] the rule name
       def initialize(name)
@@ -13,6 +18,7 @@ module Philiprehberger
         @priority = 0
         @condition = nil
         @action = nil
+        @enabled = true
       end
 
       # Set the condition for this rule.
@@ -50,7 +56,7 @@ module Philiprehberger
       def matches?(facts)
         return false unless @condition
 
-        !!@condition.call(facts)
+        !!instance_exec(facts, &@condition)
       end
 
       # Execute the action with the given facts.
@@ -60,7 +66,18 @@ module Philiprehberger
       def execute(facts)
         return nil unless @action
 
-        @action.call(facts)
+        instance_exec(facts, &@action)
+      end
+
+      # Serialize rule metadata to a hash.
+      #
+      # @return [Hash] rule metadata (name, priority, enabled)
+      def to_h
+        {
+          name: @name,
+          priority: @priority,
+          enabled: @enabled
+        }
       end
     end
   end
