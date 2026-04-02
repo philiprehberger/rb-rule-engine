@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-01
+
+### Added
+- `#dry_run(facts)` for evaluating rules without executing actions
+- `#detect_conflicts` for finding potentially overlapping rule pairs
+- `#validate_rules` for checking rule completeness
+
 ## [0.2.1] - 2026-03-31
 
 ### Changed

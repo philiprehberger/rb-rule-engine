@@ -866,6 +866,113 @@ RSpec.describe Philiprehberger::RuleEngine::Engine do
       expect(engine.chain('solo')).to eq(42)
     end
   end
+
+  describe '#dry_run' do
+    it 'returns matched rules without executing actions' do
+      engine = described_class.new
+      executed = false
+      engine.rule('test') do |r|
+        r.priority 10
+        r.condition { |facts| facts[:value] > 5 }
+        r.action { |_facts| executed = true }
+      end
+
+      result = engine.dry_run({ value: 10 })
+      expect(result.length).to eq(1)
+      expect(result[0][:name]).to eq('test')
+      expect(executed).to be false
+    end
+
+    it 'returns empty array when no rules match' do
+      engine = described_class.new
+      engine.rule('test') do |r|
+        r.condition { |facts| facts[:value] > 100 }
+        r.action { |_| nil }
+      end
+
+      expect(engine.dry_run({ value: 1 })).to be_empty
+    end
+
+    it 'respects :first mode' do
+      engine = described_class.new(mode: :first)
+      engine.rule('a') do |r|
+        r.priority 10
+        r.condition { |_| true }
+        r.action { |_| nil }
+      end
+      engine.rule('b') do |r|
+        r.priority 5
+        r.condition { |_| true }
+        r.action { |_| nil }
+      end
+
+      result = engine.dry_run({})
+      expect(result.length).to eq(1)
+    end
+  end
+
+  describe '#detect_conflicts' do
+    it 'returns pairs of enabled rules' do
+      engine = described_class.new
+      engine.rule('a') do |r|
+        r.condition { |_| true }
+        r.action { |_| nil }
+      end
+      engine.rule('b') do |r|
+        r.condition { |_| true }
+        r.action { |_| nil }
+      end
+
+      conflicts = engine.detect_conflicts
+      expect(conflicts.length).to eq(1)
+      expect(conflicts[0][:rules]).to contain_exactly('a', 'b')
+    end
+
+    it 'returns empty for single rule' do
+      engine = described_class.new
+      engine.rule('only') do |r|
+        r.condition { |_| true }
+        r.action { |_| nil }
+      end
+
+      expect(engine.detect_conflicts).to be_empty
+    end
+  end
+
+  describe '#validate_rules' do
+    it 'returns valid for complete rules' do
+      engine = described_class.new
+      engine.rule('test') do |r|
+        r.condition { |_| true }
+        r.action { |_| nil }
+      end
+
+      result = engine.validate_rules
+      expect(result[:valid]).to be true
+    end
+
+    it 'detects missing conditions' do
+      engine = described_class.new
+      engine.rule('no_cond') do |r|
+        r.action { |_| nil }
+      end
+
+      result = engine.validate_rules
+      expect(result[:valid]).to be false
+      expect(result[:issues].first).to include('no condition')
+    end
+
+    it 'detects missing actions' do
+      engine = described_class.new
+      engine.rule('no_act') do |r|
+        r.condition { |_| true }
+      end
+
+      result = engine.validate_rules
+      expect(result[:valid]).to be false
+      expect(result[:issues].first).to include('no action')
+    end
+  end
 end
 
 RSpec.describe Philiprehberger::RuleEngine::Rule do
