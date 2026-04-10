@@ -9,12 +9,17 @@ module Philiprehberger
       # @return [String] the rule name
       attr_reader :name
 
+      # @return [Array<Symbol>] the rule tags
+      attr_reader :tags
+
       # @return [Boolean] whether the rule is enabled
       attr_accessor :enabled
 
       # @param name [String] the rule name
-      def initialize(name)
+      # @param tags [Array<Symbol>] optional tags for grouping
+      def initialize(name, tags: [])
         @name = name
+        @tags = tags.map(&:to_sym)
         @priority = 0
         @condition = nil
         @action = nil
@@ -76,7 +81,8 @@ module Philiprehberger
         {
           name: @name,
           priority: @priority,
-          enabled: @enabled
+          enabled: @enabled,
+          tags: @tags
         }
       end
     end

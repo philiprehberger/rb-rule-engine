@@ -30,8 +30,8 @@ module Philiprehberger
       # @param name [String] the rule name
       # @yield [rule] block for configuring the rule
       # @return [Rule] the created rule
-      def rule(name, &block)
-        r = Rule.new(name)
+      def rule(name, tags: [], &block)
+        r = Rule.new(name, tags: tags)
         r.instance_eval(&block) if block
         @rules << r
         @stats[name] = new_stat_entry
@@ -41,10 +41,11 @@ module Philiprehberger
       # Add a rule after engine creation.
       #
       # @param name [String] the rule name
+      # @param tags [Array<Symbol>] optional tags
       # @yield [rule] block for configuring the rule
       # @return [Rule] the created rule
-      def add_rule(name, &)
-        rule(name, &)
+      def add_rule(name, tags: [], &block)
+        rule(name, tags: tags, &block)
       end
 
       # Remove a rule by name.
@@ -82,12 +83,21 @@ module Philiprehberger
         found.enabled = true
       end
 
+      # Return rules matching a specific tag.
+      #
+      # @param tag [Symbol] the tag to filter by
+      # @return [Array<Rule>]
+      def rules_by_tag(tag)
+        @rules.select { |r| r.tags.include?(tag.to_sym) }
+      end
+
       # Evaluate all rules against the given facts.
       #
       # @param facts [Object] the facts to evaluate
+      # @param tags [Array<Symbol>, nil] only evaluate rules with at least one matching tag
       # @return [Array<Hash>] results with :rule and :result for each matched rule
-      def evaluate(facts)
-        sorted = @rules.select(&:enabled).sort_by(&:priority)
+      def evaluate(facts, tags: nil)
+        sorted = filter_by_tags(@rules.select(&:enabled), tags).sort_by(&:priority)
         results = []
 
         sorted.each do |r|
@@ -139,8 +149,8 @@ module Philiprehberger
       #
       # @param facts [Hash] the facts to evaluate
       # @return [Array<Hash>] matched rules with name and priority
-      def dry_run(facts)
-        matched = enabled_rules_sorted.select { |rule| rule.matches?(facts) }
+      def dry_run(facts, tags: nil)
+        matched = filter_by_tags(enabled_rules_sorted, tags).select { |rule| rule.matches?(facts) }
         matched = [matched.first].compact if @mode == :first
         matched.map { |rule| { name: rule.name, priority: rule.priority } }
       end
@@ -202,6 +212,13 @@ module Philiprehberger
       end
 
       private
+
+      def filter_by_tags(rules, tags)
+        return rules unless tags
+
+        tag_syms = tags.map(&:to_sym)
+        rules.select { |r| r.tags.intersect?(tag_syms) }
+      end
 
       def enabled_rules_sorted
         @rules.select(&:enabled).sort_by(&:priority)
