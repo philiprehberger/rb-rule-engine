@@ -91,6 +91,25 @@ module Philiprehberger
         @rules.select { |r| r.tags.include?(tag.to_sym) }
       end
 
+      # Remove all rules and reset execution statistics.
+      #
+      # Clears the internal rule list and discards all per-rule stat entries,
+      # returning the engine to a fresh state while preserving its mode.
+      #
+      # @return [self] the engine, for chaining
+      def clear_rules!
+        @rules.clear
+        @stats.clear
+        self
+      end
+
+      # Return the names of all registered rules in declaration order.
+      #
+      # @return [Array<String>] rule names in the order they were added
+      def rule_names
+        @rules.map(&:name)
+      end
+
       # Evaluate all rules against the given facts.
       #
       # @param facts [Object] the facts to evaluate

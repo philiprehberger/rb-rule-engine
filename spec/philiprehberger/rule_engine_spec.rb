@@ -727,6 +727,79 @@ RSpec.describe Philiprehberger::RuleEngine::Engine do
     end
   end
 
+  describe '#clear_rules!' do
+    it 'clears all registered rules' do
+      engine = described_class.new do
+        rule 'one' do
+          condition { |_| true }
+          action { |_| 'a' }
+        end
+
+        rule 'two' do
+          condition { |_| true }
+          action { |_| 'b' }
+        end
+      end
+
+      engine.clear_rules!
+      expect(engine.rules).to be_empty
+    end
+
+    it 'clears statistics for all rules' do
+      engine = described_class.new do
+        rule 'tracked' do
+          condition { |_| true }
+          action { |_| 'ok' }
+        end
+      end
+
+      engine.evaluate({})
+      expect(engine.stats).not_to be_empty
+
+      engine.clear_rules!
+      expect(engine.stats).to eq({})
+    end
+
+    it 'returns the engine for chaining' do
+      engine = described_class.new do
+        rule 'noop' do
+          condition { |_| true }
+          action { |_| 'ok' }
+        end
+      end
+
+      expect(engine.clear_rules!).to be(engine)
+    end
+  end
+
+  describe '#rule_names' do
+    it 'returns an empty array when no rules are registered' do
+      engine = described_class.new
+      expect(engine.rule_names).to eq([])
+    end
+
+    it 'returns rule names in declaration order' do
+      engine = described_class.new do
+        rule 'alpha' do
+          condition { |_| true }
+          action { |_| 'a' }
+        end
+
+        rule 'beta' do
+          condition { |_| true }
+          action { |_| 'b' }
+        end
+
+        rule 'gamma' do
+          condition { |_| true }
+          action { |_| 'g' }
+        end
+      end
+
+      expect(engine.rule_names).to eq(%w[alpha beta gamma])
+    end
+  end
+
   describe '#disable_rule / #enable_rule' do
     it 'disables a rule so it is skipped during evaluation' do
       engine = described_class.new do

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-22
+
+### Added
+- `Engine#clear_rules!` — remove all rules and reset statistics in one call.
+- `Engine#rule_names` — return an array of rule names in declaration order.
+
 ## [0.4.0] - 2026-04-10
 
 ### Added
@@ -57,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rule evaluation against arbitrary facts
 - Results with rule name and action output
 
+[0.5.0]: https://github.com/philiprehberger/rb-rule-engine/releases/tag/v0.5.0
 [0.4.0]: https://github.com/philiprehberger/rb-rule-engine/releases/tag/v0.4.0
 [0.3.0]: https://github.com/philiprehberger/rb-rule-engine/releases/tag/v0.3.0
 [0.2.1]: https://github.com/philiprehberger/rb-rule-engine/releases/tag/v0.2.1
