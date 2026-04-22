@@ -141,6 +141,9 @@ engine.enable_rule('dynamic')
 engine.evaluate({ ready: true })  # => [{ rule: 'dynamic', result: 'go' }]
 
 engine.remove_rule('dynamic')
+
+engine.rule_names       # => []
+engine.clear_rules!     # removes all rules and resets stats
 ```
 
 ### Rule Chaining
@@ -240,6 +243,8 @@ end
 | `#to_h` | Serialize engine configuration to hash |
 | `#add_rule(name) { }` | Add a rule after engine creation |
 | `#remove_rule(name)` | Remove a rule by name |
+| `Engine#clear_rules!` | Remove all rules and reset statistics |
+| `Engine#rule_names` | Return an array of rule names in declaration order |
 | `#disable_rule(name)` | Disable a rule (skipped during evaluation) |
 | `#enable_rule(name)` | Re-enable a disabled rule |
 | `#chain(*rule_names)` | Execute rules sequentially as a pipeline |
