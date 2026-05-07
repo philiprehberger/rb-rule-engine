@@ -110,6 +110,13 @@ module Philiprehberger
         @rules.map(&:name)
       end
 
+      # Total number of registered rules, including disabled ones.
+      #
+      # @return [Integer]
+      def rule_count
+        @rules.length
+      end
+
       # Evaluate all rules against the given facts.
       #
       # @param facts [Object] the facts to evaluate

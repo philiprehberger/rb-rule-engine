@@ -800,6 +800,74 @@ RSpec.describe Philiprehberger::RuleEngine::Engine do
     end
   end
 
+  describe '#rule_count' do
+    it 'returns 0 for an empty engine' do
+      engine = described_class.new
+      expect(engine.rule_count).to eq(0)
+    end
+
+    it 'returns 1 after a single add_rule' do
+      engine = described_class.new
+      engine.add_rule('one') do
+        condition { |_| true }
+        action { |_| 'a' }
+      end
+      expect(engine.rule_count).to eq(1)
+    end
+
+    it 'returns 2 after two add_rule calls' do
+      engine = described_class.new
+      engine.add_rule('one') do
+        condition { |_| true }
+        action { |_| 'a' }
+      end
+      engine.add_rule('two') do
+        condition { |_| true }
+        action { |_| 'b' }
+      end
+      expect(engine.rule_count).to eq(2)
+    end
+
+    it 'still counts disabled rules' do
+      engine = described_class.new
+      engine.add_rule('one') do
+        condition { |_| true }
+        action { |_| 'a' }
+      end
+      engine.add_rule('two') do
+        condition { |_| true }
+        action { |_| 'b' }
+      end
+      engine.disable_rule('two')
+      expect(engine.rule_count).to eq(2)
+    end
+
+    it 'returns 0 after clear_rules!' do
+      engine = described_class.new
+      engine.add_rule('one') do
+        condition { |_| true }
+        action { |_| 'a' }
+      end
+      engine.clear_rules!
+      expect(engine.rule_count).to eq(0)
+    end
+
+    it 'decrements by 1 after remove_rule' do
+      engine = described_class.new
+      engine.add_rule('one') do
+        condition { |_| true }
+        action { |_| 'a' }
+      end
+      engine.add_rule('two') do
+        condition { |_| true }
+        action { |_| 'b' }
+      end
+      expect(engine.rule_count).to eq(2)
+      engine.remove_rule('one')
+      expect(engine.rule_count).to eq(1)
+    end
+  end
+
   describe '#disable_rule / #enable_rule' do
     it 'disables a rule so it is skipped during evaluation' do
       engine = described_class.new do

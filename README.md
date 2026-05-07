@@ -143,6 +143,7 @@ engine.evaluate({ ready: true })  # => [{ rule: 'dynamic', result: 'go' }]
 engine.remove_rule('dynamic')
 
 engine.rule_names       # => []
+engine.rule_count       # => 0
 engine.clear_rules!     # removes all rules and resets stats
 ```
 
@@ -245,6 +246,7 @@ end
 | `#remove_rule(name)` | Remove a rule by name |
 | `Engine#clear_rules!` | Remove all rules and reset statistics |
 | `Engine#rule_names` | Return an array of rule names in declaration order |
+| `Engine#rule_count` | Total number of registered rules including disabled |
 | `#disable_rule(name)` | Disable a rule (skipped during evaluation) |
 | `#enable_rule(name)` | Re-enable a disabled rule |
 | `#chain(*rule_names)` | Execute rules sequentially as a pipeline |
